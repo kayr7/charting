@@ -2,16 +2,12 @@
 
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate rocket_contrib;
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate diesel;
 
 use rocket_contrib::json::{Json};
-use rocket_contrib::json;
 //use rocket_contrib::databases::diesel;
 
 extern crate serde_json;
-use serde::{Serialize, Deserialize};
-use serde_json::{Result};
 
 extern crate rocket_cors;
 use rocket_cors::{
@@ -19,48 +15,36 @@ use rocket_cors::{
     Cors, CorsOptions // 3.
 };
 
-use std::fs::OpenOptions;
 use std::fs::File;
 
-use std::io::prelude::*;
-use std::io::{BufReader, Read, BufRead};
-
-use mut_static::MutStatic;
+use std::io::{BufReader, BufRead};
 
 use rocket::http::Method;
 
-use rocket::State;
-
-
 extern crate chrono;
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
-use chrono::format::ParseError;
-use std::{cell::RefCell, sync::Mutex};
+use chrono::{NaiveDate};
 
 use crate::diesel::RunQueryDsl;
-use diesel::sql_query;
-use diesel::prelude::*;
+use crate::diesel::query_dsl::methods::OrderDsl;
+use crate::schema::measurements::columns::date;
 
+pub mod schema;
+pub mod models;
 
+use self::models::Measurement;
+use self::models::MeasurementHelper;
+use self::models::MeasurementHelperRaw;
 
-table! {
-    use diesel::sql_types::*;
-    measurements (date) {
-        date -> Text,
-        Temperature -> Double,
-        Schleimstruktur -> Text,
-        Geschlechtsverkehr -> Integer,
-        Mittelschmerz -> Integer,
-        Zwischenblutung -> Integer,
-        Blutung -> Text,
-    }
-}
+use std::fs::OpenOptions;
+use std::io::Write;
+
+use self::schema::*;
 
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_regex(&[ // 4.
         "http://localhost:8080",
         "http://127.0.0.1:8080",
-        "http://localhost:8000",
+        "http://localhost:8001",
         "http://192.168.8.4:3000.*",
     ]);
 
@@ -82,51 +66,11 @@ fn make_cors() -> Cors {
 
 
 
-#[derive(Serialize, Clone, Debug, Deserialize, Queryable)]
-struct Measurement {
-    Date: String,
-    Temperature: f64,
-    Schleimstruktur: String,
-    Geschlechtsverkehr: i32,
-    Mittelschmerz: i32,
-    Zwischenblutung: i32,
-    Blutung: String,
-}
+
 
 
 #[database("mydb")]
 struct MyDatabase(diesel::SqliteConnection);
-impl MyDatabase {
-    pub fn initialize_db(&self) {
-//        self.execute_batch(SCHEMA).expect("create tables");
-    }
-
-/*    fn task_from_row(row: &Row) -> Task {
-        Task::new(
-            row.get("id"),
-            row.get("name"),
-            vec![],
-            row.get("due"),
-            row.get::<&str, f64>("hours") as f32,
-        )
-    }
-
-    fn tags_for_task(&self, id: u32) -> Vec<String> {
-        let mut stmt = self.0
-            .prepare("SELECT tag from tasks_tags WHERE task = ?;")
-            .expect("query tags statement");
-        let tags: Result<Vec<String>, rusqlite::Error> =
-            stmt.query_map(&[&id], |row| row.get(0)).unwrap().collect();
-        tags.expect("query tags results")
-    }
-
-    fn delete_task_internal(tx: &rusqlite::Transaction, id: u32) {
-        tx.execute("DELETE FROM tasks_tags WHERE task = ?;", &[&id])
-            .expect("delete task tags");
-        tx.execute("DELETE FROM tasks WHERE id = ?;", &[&id])
-            .expect("delete task");
-    }*/
-}
 
 
 
@@ -136,47 +80,46 @@ fn index() -> &'static str {
 }
 
 #[get("/measurements")]
-fn all_measurements(conn: MyDatabase) -> Json<Vec<Measurement>> {
-/*    let mut stmt = conn.prepare("SELECT date, 
-                                        Temperature,
-                                        Schleimstruktur,
-                                        Geschlechtsverkehr,
-                                        Mittelschmerz,
-                                        Zwischenblutung,
-                                        Blutung FROM measurements");
-    let measurement_iter = stmt.query_map(params![], |row| {
-        Measurement {
-            Date:  date_from_sqlite_to_app(row.get(0)?),
-            Temperature: row.get(1)?,
-            Schleimstruktur: row.get(2)?,
-            Geschlechtsverkehr: row.get(3)?,
-            Mittelschmerz: row.get(4)?,
-            Zwischenblutung: row.get(5)?,
-            Blutung: row.get(6)?,
-        }
-    })?;*/
+fn all_measurements(conn: MyDatabase) -> Json<Vec<MeasurementHelperRaw>> {
     let results = measurements::table
+        .order(date)
         .load::<Measurement>(&*conn)
         .expect("Error loading posts");
 
-//    for r in results {
-//        println!("{:?}", r);
-//    }
+    let mut ret_vector: Vec<MeasurementHelperRaw> = vec![];
+    for r in results {
+        let new_date = date_from_sqlite_to_app(&r.date);
+        let m = MeasurementHelperRaw {
+            date: new_date,
+            temperature: r.temperature,
+            schleimstruktur: r.schleimstruktur,
+            geschlechtsverkehr: r.geschlechtsverkehr != 0,
+            mittelschmerz: r.mittelschmerz != 0,
+            zwischenblutung: r.zwischenblutung != 0,
+            blutung: r.blutung,
+        };
+        ret_vector.push(m);
+    }
 
-/*    let ret_value = vec!(Measurement{ 
-        Date: "2019-11-25".to_string(),
-        Temperature: 37.3,
-        Schleimstruktur: "".to_string(),
-        Geschlechtsverkehr: 1,
-        Mittelschmerz: 1,
-        Zwischenblutung: 1,
-        Blutung: "".to_string(),
-    });*/
-    return Json(results)
+    return Json(ret_vector);
+}
+
+
+fn insert_measurement(m: Measurement, conn: MyDatabase) {
+    if m.temperature > 34. && m.temperature < 42. {
+        let result = diesel::insert_into(measurements::table)
+                            .values(&m).execute(&*conn);
+        match result {
+            Ok(_) => {},
+            Err(e) => println!("error inserting into Database {}: {:?}", e, m)
+        };
+
+    }
 }
 
 #[post("/measurement", format = "text/plain", data = "<measurement>")]
-fn new_measurement(measurement: Json<Measurement>) {
+fn new_measurement(conn: MyDatabase, measurement: Json<MeasurementHelperRaw>) {
+
     let mut file = OpenOptions::new()
         .write(true)
         .append(true)
@@ -188,97 +131,85 @@ fn new_measurement(measurement: Json<Measurement>) {
     if let Err(e) = writeln!(file, "{}", json!(t).to_string()) {
         eprintln!("Couldn't write to file: {}", e);
     }
+
+    println!("{:?}", measurement);
+    let new_date = date_from_app_to_sqlite(&measurement.date);
+    println!("new_date: {:?}", new_date);
+    let new_measurement = Measurement {
+        date : new_date,
+        temperature: measurement.temperature,
+        schleimstruktur: measurement.schleimstruktur.clone(),
+        geschlechtsverkehr: if measurement.geschlechtsverkehr { 1 } else { 0 },
+        mittelschmerz: if measurement.mittelschmerz { 1 } else { 0 },
+        zwischenblutung: if measurement.zwischenblutung { 1 } else { 0 },
+        blutung: measurement.blutung.clone(),
+
+    };
+    insert_measurement(new_measurement, conn);
 }
 
-fn read_from_file(filename: String) -> Vec<Measurement>{
-    let mut measurement_vector: Vec<Measurement> = vec![];
-    if let Ok(file) = File::open(filename) {
+#[get("/update_from_file")]
+fn file_update(conn: MyDatabase) -> &'static str {
+    if let Ok(file) = File::open("my-file") {
         let reader = BufReader::new(file);
-
         for line in reader.lines() {
-            println!("{:?}", line);
-            if let Ok(m) = serde_json::from_str(&line.unwrap()) {
-                measurement_vector.push(m);
-            }
+            let helper_string = format!("{{ \"original\" : {} }}", &line.unwrap());
+            let res: Result<MeasurementHelper, _> = serde_json::from_str(&helper_string);
+            match res {
+                Ok(m) => {
+                    let new_date = date_from_app_to_sqlite(&m.original.date);
+                    let new_measurement = Measurement {
+                        date : new_date,
+                        temperature: m.original.temperature,
+                        schleimstruktur: m.original.schleimstruktur.clone(),
+                        geschlechtsverkehr: if m.original.geschlechtsverkehr { 1 } else { 0 },
+                        mittelschmerz: if m.original.mittelschmerz { 1 } else { 0 },
+                        zwischenblutung: if m.original.zwischenblutung { 1 } else { 0 },
+                        blutung: m.original.blutung.clone(),
+                    };
+                    if new_measurement.temperature > 34. && new_measurement.temperature < 42. {
+                        let result = diesel::insert_into(measurements::table)
+                            .values(&new_measurement)
+                            .execute(&*conn);
 
+                        match result {
+                            Ok(_) => {},
+                            Err(e) => println!("error inserting into Database {}: {:?}", e, new_measurement)
+                        };
+
+                    }
+                }
+                Err(e) => println!("Error Converting Json: {:?}", e)
+            }
         }
     }
-    return measurement_vector;
+    return "done"
 }
 
 
-/*
-fn create_tables(conn: &Connection) {
-    println!("{:?}", conn.execute(
-        "CREATE TABLE if not exists measurements (
-             date TEXT PRIMARY KEY,
-             Temperature REAL not null,
-             Schleimstruktur TEXT,
-             Geschlechtsverkehr INTEGER,
-             Mittelschmerz INTEGER,
-             Zwischenblutung INTEGER,
-             Blutung TEXT
-         )",
-        NO_PARAMS,
-    ));
-}*/
 
 fn date_from_sqlite_to_app(in_date: &str) -> String {
-    let date = NaiveDate::parse_from_str(in_date, "%Y-%m-%d").unwrap();
-    let ret_val = date.format("%d.%m.%Y").to_string().clone();
+    let n_date = NaiveDate::parse_from_str(in_date, "%Y-%m-%d").unwrap();
+    let ret_val = n_date.format("%d.%m.%Y").to_string().clone();
     return ret_val
 }
 
-fn insert_measurements(measurements: Vec<Measurement>) {
-    for m in measurements {
-        let date = NaiveDate::parse_from_str(&m.Date, "%d.%m.%Y").unwrap();
-        let date_str = date.format("%Y-%m-%d").to_string();
-/*        let result = conn.execute(
-            "INSERT INTO measurements (
-                                        date,
-                                        Temperature,
-                                        Schleimstruktur,
-                                        Geschlechtsverkehr,
-                                        Mittelschmerz,
-                                        Zwischenblutung,
-                                        Blutung) 
-                        values (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![
-                &date_str,
-                m.Temperature,
-                &m.Schleimstruktur,
-                if m.Geschlechtsverkehr { 1 } else { 0 },
-                if m.Mittelschmerz { 1 } else { 0 },
-                if m.Zwischenblutung {1 } else { 0 },
-                &m.Blutung
-            ],
-        );*/
-//        let last_id : String = conn.last_insert_rowid().to_string();
-//        println!("{:?}", last_id);
-    }
+fn date_from_app_to_sqlite(in_date: &str) -> String {
+    let n_date = NaiveDate::parse_from_str(in_date, "%d.%m.%Y").unwrap();
+    let ret_val = n_date.format("%Y-%m-%d").to_string().clone();
+    return ret_val
 }
 
 
+
 fn main() {
-//    let conn = Connection::open("charting.db").unwrap();
-    let fairing = MyDatabase::fairing();
-
-//    create_tables(&conn);
-
-//    let past_measurements = read_from_file("./my-file".to_string());
-//    insert_measurements(past_measurements, &conn);
-
-
     rocket::ignite().mount("/", routes![index,
                                         all_measurements,
                                         new_measurement,
+                                        file_update,
                                         ])
                                         .attach(make_cors())
                                         .attach(MyDatabase::fairing())
-/*                                        .attach("Initialize Database Schema", |rocket| {
-                                                let conn = MyDatabase::get_one(&rocket).expect("database connection");
-                                                conn.initialize_db();
-                                                Ok(rocket)})*/
                                         .launch();
 
 }
