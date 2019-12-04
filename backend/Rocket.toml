@@ -1,7 +1,11 @@
 [development]
 address = "0.0.0.0"
-port = 8000
+port = 8001
 workers = 2
 keep_alive = 5
 log = "normal"
 limits = { forms = 32768 }
+
+
+[global.databases]
+mydb = { url = "./charting.db" }

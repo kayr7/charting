@@ -4,6 +4,11 @@ use super::schema::measurements;
 use serde_aux::prelude::*;
 
 
+
+#[database("mydb")]
+pub struct MyDatabase(diesel::SqliteConnection);
+
+
 #[derive(Serialize, Clone, Debug, Deserialize, Queryable, Insertable)]
 #[table_name="measurements"]
 pub struct Measurement {
@@ -27,6 +32,13 @@ pub struct MeasurementHelperRaw {
     pub zwischenblutung: bool,
     pub blutung: String,
 }
+
+#[derive(Serialize, Clone, Debug, Deserialize)]
+pub struct BoolHelperRaw {
+    pub date: String,
+    pub value: bool,
+}
+
 
 #[derive(Serialize, Clone, Debug, Deserialize)]
 pub struct MeasurementHelper {

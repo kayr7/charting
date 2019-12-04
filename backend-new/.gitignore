@@ -1,2 +1,4 @@
 /target
 **/*.rs.bk
+/my-file
+/charting.db
