@@ -39,6 +39,12 @@ pub struct BoolHelperRaw {
     pub value: bool,
 }
 
+#[derive(Serialize, Clone, Debug, Deserialize)]
+pub struct StringHelperRaw {
+    pub date: String,
+    pub value: String,
+}
+
 
 #[derive(Serialize, Clone, Debug, Deserialize)]
 pub struct MeasurementHelper {

@@ -24,22 +24,14 @@ use self::models::MyDatabase;
 
 
 use crate::routes::static_rocket_route_info_for_update_zwischenblutung;
+use crate::routes::static_rocket_route_info_for_update_blutung;
 use crate::routes::static_rocket_route_info_for_update_mittelschmerz;
+use crate::routes::static_rocket_route_info_for_update_schleim;
 use crate::routes::static_rocket_route_info_for_update_gv;
 use crate::routes::static_rocket_route_info_for_file_update;
 use crate::routes::static_rocket_route_info_for_new_measurement;
 use crate::routes::static_rocket_route_info_for_all_measurements;
 use crate::routes::static_rocket_route_info_for_index;
-
-/*use self::routes::{
-    index,
-    all_measurements,
-    new_measurement,
-    file_update,
-    update_gv,
-    update_mittelschmerz,
-    update_zwischenblutung
-};*/
 
 
 fn make_cors() -> Cors {
@@ -80,6 +72,8 @@ fn main() {
                                         update_gv,
                                         update_mittelschmerz,
                                         update_zwischenblutung,
+                                        update_blutung,
+                                        update_schleim,
                                         ])
                                         .attach(make_cors())
                                         .attach(MyDatabase::fairing())

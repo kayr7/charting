@@ -6,10 +6,13 @@ use crate::models::Measurement;
 use crate::models::MeasurementHelper;
 use crate::models::MeasurementHelperRaw;
 use crate::models::BoolHelperRaw;
+use crate::models::StringHelperRaw;
 use crate::models::MyDatabase;
 use crate::schema::measurements::columns::geschlechtsverkehr;
 use crate::schema::measurements::columns::mittelschmerz;
 use crate::schema::measurements::columns::zwischenblutung;
+use crate::schema::measurements::columns::schleimstruktur;
+use crate::schema::measurements::columns::blutung;
 use crate::schema::measurements::columns::date;
 use crate::schema::measurements;
 
@@ -120,58 +123,75 @@ pub fn new_measurement(conn: MyDatabase, measurement: Json<MeasurementHelperRaw>
 }
 
 
-fn update_g(v: i32, dat: String, conn: MyDatabase) {
-    let result = diesel::update(measurements::table.filter(date.eq(dat)))
-                        .set(geschlechtsverkehr.eq(v))
-                        .execute(&*conn);
-    match result {
-        Ok(_) => {},
-        Err(e) => println!("error inserting into Database {}", e)
-    };
-}
-
 #[post("/update_gv", format = "text/plain", data = "<measurement>")]
 pub fn update_gv(conn: MyDatabase, measurement: Json<BoolHelperRaw>) {
     println!("{:?}", measurement);
     let new_date = date_from_app_to_sqlite(&measurement.date);
     println!("new_date: {:?}", new_date);
-    update_g(if measurement.value { 1 } else { 0 }, new_date, conn);
-}
-
-
-fn update_ms(v: i32, dat: String, conn: MyDatabase) {
-    let result = diesel::update(measurements::table.filter(date.eq(dat)))
-                        .set(mittelschmerz.eq(v))
+//    update_g(if measurement.value { 1 } else { 0 }, new_date, conn);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(geschlechtsverkehr.eq(if measurement.value { 1 } else { 0 }))
                         .execute(&*conn);
     match result {
         Ok(_) => {},
         Err(e) => println!("error inserting into Database {}", e)
     };
 }
+
+
 #[post("/update_ms", format = "text/plain", data = "<measurement>")]
 pub fn update_mittelschmerz(conn: MyDatabase, measurement: Json<BoolHelperRaw>) {
     println!("{:?}", measurement);
     let new_date = date_from_app_to_sqlite(&measurement.date);
     println!("new_date: {:?}", new_date);
-    update_ms(if measurement.value { 1 } else { 0 }, new_date, conn);
-}
-
-
-fn update_z(v: i32, dat: String, conn: MyDatabase) {
-    let result = diesel::update(measurements::table.filter(date.eq(dat)))
-                        .set(zwischenblutung.eq(v))
+//    update_ms(if measurement.value { 1 } else { 0 }, new_date, conn);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(mittelschmerz.eq(if measurement.value { 1 } else { 0 }))
                         .execute(&*conn);
     match result {
         Ok(_) => {},
         Err(e) => println!("error inserting into Database {}", e)
     };
 }
+
+
 #[post("/update_zb", format = "text/plain", data = "<measurement>")]
 pub fn update_zwischenblutung(conn: MyDatabase, measurement: Json<BoolHelperRaw>) {
     println!("{:?}", measurement);
     let new_date = date_from_app_to_sqlite(&measurement.date);
     println!("new_date: {:?}", new_date);
-    update_z(if measurement.value { 1 } else { 0 }, new_date, conn);
+//    update_z(if measurement.value { 1 } else { 0 }, new_date, conn);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(zwischenblutung.eq(if measurement.value { 1 } else { 0 }))
+                        .execute(&*conn);
+    match result {
+        Ok(_) => {},
+        Err(e) => println!("error inserting into Database {}", e)
+    };
+}
+
+#[post("/update_blutung", format = "text/plain", data = "<measurement>")]
+pub fn update_blutung(conn: MyDatabase, measurement: Json<StringHelperRaw>) {
+    let new_date = date_from_app_to_sqlite(&measurement.date);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(blutung.eq(&measurement.value))
+                        .execute(&*conn);
+    match result {
+        Ok(_) => {},
+        Err(e) => println!("error inserting into Database {}", e)
+    };
+}
+
+#[post("/update_schleim", format = "text/plain", data = "<measurement>")]
+pub fn update_schleim(conn: MyDatabase, measurement: Json<StringHelperRaw>) {
+    let new_date = date_from_app_to_sqlite(&measurement.date);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(schleimstruktur.eq(&measurement.value))
+                        .execute(&*conn);
+    match result {
+        Ok(_) => {},
+        Err(e) => println!("error inserting into Database {}", e)
+    };
 }
 
 

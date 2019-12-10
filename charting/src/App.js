@@ -34,17 +34,19 @@ class App extends React.Component {
 
     this.handleTemperatureChange = this.handleTemperatureChange.bind(this);
     this.handleDateChange = this.handleDateChange.bind(this);
-    this.handleMittelschmerzChange = this.handleMittelschmerzChange.bind(this);
-    this.handleZwischenblutungChange = this.handleZwischenblutungChange.bind(this);
-    this.handleGeschlechtsverkehrChange = this.handleGeschlechtsverkehrChange.bind(this);
-    this.handleSchleimstrukturChange = this.handleSchleimstrukturChange.bind(this);
-    this.handleBlutungChange = this.handleBlutungChange.bind(this);
+//    this.handleMittelschmerzChange = this.handleMittelschmerzChange.bind(this);
+//    this.handleZwischenblutungChange = this.handleZwischenblutungChange.bind(this);
+//    this.handleGeschlechtsverkehrChange = this.handleGeschlechtsverkehrChange.bind(this);
+//    this.handleSchleimstrukturChange = this.handleSchleimstrukturChange.bind(this);
+//    this.handleBlutungChange = this.handleBlutungChange.bind(this);
     
     this.handleSubmit = this.handleSubmit.bind(this);
 
     this.handleGvUpdate = this.handleGvUpdate.bind(this);
     this.handleMittelschmerzUpdate = this.handleMittelschmerzUpdate.bind(this);
     this.handleZwischenblutungUpdate = this.handleZwischenblutungUpdate.bind(this);
+    this.handleBlutungUpdate = this.handleBlutungUpdate.bind(this);
+    this.handleSchleimstrukturUpdate = this.handleSchleimstrukturUpdate.bind(this);
 
 
   }
@@ -94,15 +96,6 @@ class App extends React.Component {
     this.setState({date: date});
   }
 
-  handleMittelschmerzChange(event) {
-    this.setState({mittelschmerz: event.target.checked});
-  }
-  handleZwischenblutungChange(event) {
-    this.setState({zwischenblutung: event.target.checked});
-  }
-  handleGeschlechtsverkehrChange(event) {
-    this.setState({geschlechtsverkehr: event.target.checked});
-  }
 
   handleGvUpdate(event) {
     fetch('http://192.168.8.4:8001/update_gv', {
@@ -133,6 +126,38 @@ class App extends React.Component {
       })
   }
 
+  handleBlutungUpdate(event) {
+    fetch('http://192.168.8.4:8001/update_blutung', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: '{"date": "'+event.target.id+'", "value": "'+event.target.value+'"}'})
+      .then(result => {
+        fetch('http://192.168.8.4:8001/measurements')
+        .then(result => {
+          return result.json();
+        }).then(dat => {
+          this.setState({measurements: dat});
+        })
+      })
+  }
+
+  handleSchleimstrukturUpdate(event) {
+    fetch('http://192.168.8.4:8001/update_schleim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: '{"date": "'+event.target.id+'", "value": "'+event.target.value+'"}'})
+      .then(result => {
+        fetch('http://192.168.8.4:8001/measurements')
+        .then(result => {
+          return result.json();
+        }).then(dat => {
+          this.setState({measurements: dat});
+        })
+      })
+  }
+
+
+
   handleMittelschmerzUpdate(event) {
     fetch('http://192.168.8.4:8001/update_ms', {
       method: 'POST',
@@ -148,14 +173,6 @@ class App extends React.Component {
       })
   }
 
-
-
-  handleSchleimstrukturChange(event) {
-    this.setState({schleimstruktur: event.target.value});
-  }
-  handleBlutungChange(event) {
-    this.setState({blutung: event.target.value});
-  }
 
   render() {
     return (
@@ -175,28 +192,6 @@ class App extends React.Component {
         <Form.Group>
           <Form.Label>Temperatur</Form.Label>
           <input type="text" value={this.state.temperature} onChange={this.handleTemperatureChange} />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Blutung</Form.Label>
-          <Form.Control as="select" onChange={this.handleBlutungChange}>
-            <option>--</option>
-            <option>wenig</option>
-            <option>mittel</option>
-            <option>stark</option>
-          </Form.Control>
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Schleim</Form.Label>
-          <Form.Control as="select" onChange={this.handleSchleimstrukturChange}>
-            <option>--</option>
-            <option>flockig, klebrig, wenig</option>
-            <option>spinnbar, durchsichtig, fluessig</option>
-          </Form.Control>
-        </Form.Group>
-        <Form.Group>
-          <Form.Check type="checkbox" label="Mittelschmerz" onChange={this.handleMittelschmerzChange}/>
-          <Form.Check type="checkbox" label="Zwischenblutung" onChange={this.handleZwischenblutungChange}/>
-          <Form.Check type="checkbox" label="Geschlechtsverkehr" onChange={this.handleGeschlechtsverkehrChange}/>
         </Form.Group>
         <input type="submit" value="Submit" />
       </Form>
@@ -228,14 +223,43 @@ class App extends React.Component {
             </tr>
           </thead>
           <tbody>
-            {Object.keys(this.state.measurements).map((k, i) => {
+            {
+            
+            Object.keys(this.state.measurements).reverse().map((k, i) => {
             let m = this.state.measurements[k];
             return (
               <tr key={i}>
                 <td>{m.date}</td>
                 <td>{m.temperature}</td>
-                <td>{m.blutung}</td>
-                <td>{m.schleimstruktur}</td>
+                <td>
+                <Form.Group>
+                  <Form.Label>Blutung</Form.Label>
+                  <Form.Control as="select"
+                    defaultValue={m.blutung}
+                    id={m.date}
+                    onChange={this.handleBlutungUpdate}>
+                    <option></option>
+                    <option>schmierblutung</option>
+                    <option>wenig</option>
+                    <option>mittel</option>
+                    <option>stark</option>
+                  </Form.Control>
+                </Form.Group>
+                </td>
+                <td>
+                <Form.Group>
+                  <Form.Label>Schleim</Form.Label>
+                  <Form.Control as="select" 
+                      onChange={this.handleSchleimstrukturUpdate}
+                      id={m.date}
+                      defaultValue={m.schleimstruktur}>
+                    <option></option>
+                    <option>cremig</option>
+                    <option>spinnbar, durchsichtig</option>
+                    <option>fluessig</option>
+                  </Form.Control>
+                </Form.Group>
+                </td>
                 <td>         
                   <Form.Check type="checkbox"
                               id={m.date}
@@ -303,6 +327,8 @@ const Chart = (props) => {
           else {
             blutungen_stop = element.date;
           }
+          
+
         } else {
           if (blutungen_start != null)
             no_blutung++;
@@ -313,7 +339,12 @@ const Chart = (props) => {
           }
         }
       });
-      console.log(blutungen);
+      
+      if (blutungen_start != null) {
+        blutungen.push([blutungen_start.slice(), blutungen_stop.slice()]);
+        blutungen_stop = null;
+        blutungen_start = null;
+      }
 
 
       const svg = d3.select(ref.current);
@@ -346,7 +377,7 @@ const Chart = (props) => {
           .attr("fill", "red")
           .attr("transform", "translate(50, 20)")
           .attr("opacity", 0.2)
-          .attr("x", function(d) { console.log("echo"); return xScale(parseTime(d[0]))})
+          .attr("x", function(d) { return xScale(parseTime(d[0]))})
           .attr("y", 0)
           .attr("width", function(d) {return xScale(parseTime(d[1])) - xScale(parseTime(d[0]))})
           .attr("height", height);
