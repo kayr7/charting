@@ -27,6 +27,7 @@ use crate::routes::static_rocket_route_info_for_update_zwischenblutung;
 use crate::routes::static_rocket_route_info_for_update_blutung;
 use crate::routes::static_rocket_route_info_for_update_mittelschmerz;
 use crate::routes::static_rocket_route_info_for_update_schleim;
+use crate::routes::static_rocket_route_info_for_update_temperature;
 use crate::routes::static_rocket_route_info_for_update_gv;
 use crate::routes::static_rocket_route_info_for_file_update;
 use crate::routes::static_rocket_route_info_for_new_measurement;
@@ -74,6 +75,7 @@ fn main() {
                                         update_zwischenblutung,
                                         update_blutung,
                                         update_schleim,
+                                        update_temperature,
                                         ])
                                         .attach(make_cors())
                                         .attach(MyDatabase::fairing())

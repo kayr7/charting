@@ -45,6 +45,12 @@ pub struct StringHelperRaw {
     pub value: String,
 }
 
+#[derive(Serialize, Clone, Debug, Deserialize)]
+pub struct FloatHelperRaw {
+    pub date: String,
+    pub value: f32,
+}
+
 
 #[derive(Serialize, Clone, Debug, Deserialize)]
 pub struct MeasurementHelper {

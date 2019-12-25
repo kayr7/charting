@@ -47,7 +47,7 @@ class App extends React.Component {
     this.handleZwischenblutungUpdate = this.handleZwischenblutungUpdate.bind(this);
     this.handleBlutungUpdate = this.handleBlutungUpdate.bind(this);
     this.handleSchleimstrukturUpdate = this.handleSchleimstrukturUpdate.bind(this);
-
+    this.handleTemperatureUpdate = this.handleTemperatureUpdate.bind(this);
 
   }
 
@@ -156,6 +156,21 @@ class App extends React.Component {
       })
   }
 
+  handleTemperatureUpdate(event) {
+    fetch('http://192.168.8.4:8001/update_temperature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: '{"date": "'+event.target.id+'", "value": '+event.target.value+'}'})
+      .then(result => {
+        fetch('http://192.168.8.4:8001/measurements')
+        .then(result => {
+          return result.json();
+        }).then(dat => {
+          this.setState({measurements: dat});
+        })
+      })
+  }
+
 
 
   handleMittelschmerzUpdate(event) {
@@ -182,21 +197,19 @@ class App extends React.Component {
             <tr>
             <td>
             <Form onSubmit={this.handleSubmit}>
-        <Form.Group>
-          <Form.Label>Datum:</Form.Label>
-          <DatePicker
-            selected={this.state.date}
-            onChange={this.handleDateChange}
-          />
-        </Form.Group>
-        <Form.Group>
-          <Form.Label>Temperatur</Form.Label>
-          <input type="text" value={this.state.temperature} onChange={this.handleTemperatureChange} />
-        </Form.Group>
-        <input type="submit" value="Submit" />
-      </Form>
-
-
+              <Form.Group>
+                <Form.Label>Datum:</Form.Label>
+                <DatePicker
+                  selected={this.state.date}
+                  onChange={this.handleDateChange}
+                />
+              </Form.Group>
+              <Form.Group>
+                <Form.Label>Temperatur</Form.Label>
+                <Form.Control as="input" type="number" value={this.state.temperature} onChange={this.handleTemperatureChange} />
+              </Form.Group>
+              <input type="submit" value="Submit" />
+            </Form>
             </td>
             <td>
             <Chart data={this.state.measurements}
@@ -204,11 +217,8 @@ class App extends React.Component {
              height={280}/>
             </td>
             </tr>
-
-
           </tbody>
         </table>
-
 
         <Table striped bordered hover>
           <thead>
@@ -230,10 +240,17 @@ class App extends React.Component {
             return (
               <tr key={i}>
                 <td>{m.date}</td>
-                <td>{m.temperature}</td>
+                <td>
+                  <Form.Group>
+                    <Form.Control as="input" 
+                      type="number" 
+                      id={m.date}
+                      value={m.temperature} 
+                      onChange={this.handleTemperatureUpdate} />
+                  </Form.Group>
+                </td>
                 <td>
                 <Form.Group>
-                  <Form.Label>Blutung</Form.Label>
                   <Form.Control as="select"
                     defaultValue={m.blutung}
                     id={m.date}
@@ -248,7 +265,6 @@ class App extends React.Component {
                 </td>
                 <td>
                 <Form.Group>
-                  <Form.Label>Schleim</Form.Label>
                   <Form.Control as="select" 
                       onChange={this.handleSchleimstrukturUpdate}
                       id={m.date}
@@ -297,7 +313,6 @@ const Chart = (props) => {
     const ref = useRef();
 
     const [data, setData] = useState(props.data);
-
 
 
     useEffect(() => {

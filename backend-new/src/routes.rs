@@ -6,6 +6,7 @@ use crate::models::Measurement;
 use crate::models::MeasurementHelper;
 use crate::models::MeasurementHelperRaw;
 use crate::models::BoolHelperRaw;
+use crate::models::FloatHelperRaw;
 use crate::models::StringHelperRaw;
 use crate::models::MyDatabase;
 use crate::schema::measurements::columns::geschlechtsverkehr;
@@ -13,6 +14,7 @@ use crate::schema::measurements::columns::mittelschmerz;
 use crate::schema::measurements::columns::zwischenblutung;
 use crate::schema::measurements::columns::schleimstruktur;
 use crate::schema::measurements::columns::blutung;
+use crate::schema::measurements::columns::temperature;
 use crate::schema::measurements::columns::date;
 use crate::schema::measurements;
 
@@ -53,10 +55,12 @@ pub fn index() -> &'static str {
     "Hello, world!"
 }
 
+
 #[get("/measurements")]
 pub fn all_measurements(conn: MyDatabase) -> Json<Vec<MeasurementHelperRaw>> {
     let results = measurements::table
-        .order(date)
+        .order(date.desc())
+        .limit(40)
         .load::<Measurement>(&*conn)
         .expect("Error loading posts");
 
@@ -74,7 +78,7 @@ pub fn all_measurements(conn: MyDatabase) -> Json<Vec<MeasurementHelperRaw>> {
         };
         ret_vector.push(m);
     }
-
+    ret_vector.reverse();
     return Json(ret_vector);
 }
 
@@ -120,6 +124,21 @@ pub fn new_measurement(conn: MyDatabase, measurement: Json<MeasurementHelperRaw>
 
     };
     insert_measurement(new_measurement, conn);
+}
+
+#[post("/update_temperature", format = "text/plain", data = "<measurement>")]
+pub fn update_temperature(conn: MyDatabase, measurement: Json<FloatHelperRaw>) {
+    println!("{:?}", measurement);
+    let new_date = date_from_app_to_sqlite(&measurement.date);
+    println!("new_date: {:?}", new_date);
+//    update_g(if measurement.value { 1 } else { 0 }, new_date, conn);
+    let result = diesel::update(measurements::table.filter(date.eq(new_date)))
+                        .set(temperature.eq(measurement.value))
+                        .execute(&*conn);
+    match result {
+        Ok(_) => {},
+        Err(e) => println!("error inserting into Database {}", e)
+    };
 }
 
 
