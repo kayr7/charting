@@ -15,6 +15,18 @@ function jsonCopy(src) {
   return JSON.parse(JSON.stringify(src));
 }
 
+function isFloat(val) {
+  var floatRegex = /^-?\d+(?:[.,]\d+)?$/;
+  if (!floatRegex.test(val)) {
+    console.log(val + " didn't pass the regex");
+    return false;
+  }
+
+  val = parseFloat(val);
+  if (isNaN(val))
+      return false;
+  return true;
+}
 
 
 
@@ -88,6 +100,9 @@ class App extends React.Component {
 
 
   handleTemperatureChange(event) {
+//    if (!isFloat(event.target.value)) {
+//      return;
+//    }
     this.setState({temperature: event.target.value});
   }
 
@@ -156,11 +171,18 @@ class App extends React.Component {
       })
   }
 
+  
+  
   handleTemperatureUpdate(event) {
+    if (!isFloat(event.target.value)) {
+      return;
+    }
+    console.log(event.target.value + " seems to be a valid input");
+
     fetch('http://192.168.8.4:8001/update_temperature', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: '{"date": "'+event.target.id+'", "value": '+event.target.value+'}'})
+      body: '{"date": "'+event.target.id+'", "value": '+parseFloat(event.target.value)+'}'})
       .then(result => {
         fetch('http://192.168.8.4:8001/measurements')
         .then(result => {
@@ -206,7 +228,7 @@ class App extends React.Component {
               </Form.Group>
               <Form.Group>
                 <Form.Label>Temperatur</Form.Label>
-                <Form.Control as="input" type="number" value={this.state.temperature} onChange={this.handleTemperatureChange} />
+                <Form.Control as="input" type="text" value={this.state.temperature} onChange={this.handleTemperatureUpdate} />
               </Form.Group>
               <input type="submit" value="Submit" />
             </Form>
@@ -243,7 +265,7 @@ class App extends React.Component {
                 <td>
                   <Form.Group>
                     <Form.Control as="input" 
-                      type="number" 
+                      type="text" 
                       id={m.date}
                       value={m.temperature} 
                       onChange={this.handleTemperatureUpdate} />
