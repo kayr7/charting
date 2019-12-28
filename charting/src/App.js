@@ -228,7 +228,7 @@ class App extends React.Component {
               </Form.Group>
               <Form.Group>
                 <Form.Label>Temperatur</Form.Label>
-                <Form.Control as="input" type="text" value={this.state.temperature} onChange={this.handleTemperatureUpdate} />
+                <Form.Control as="input" type="text" value={this.state.temperature} onChange={this.handleTemperatureChange} />
               </Form.Group>
               <input type="submit" value="Submit" />
             </Form>
