@@ -40,7 +40,8 @@ fn make_cors() -> Cors {
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:8001",
-        "http://192.168.8.4:3000.*",
+        "http://192.168.8.5.*",
+        "http://nuc2.r7net.de",
     ]);
 
     CorsOptions { // 5.
