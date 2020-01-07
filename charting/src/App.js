@@ -10,6 +10,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import Form from 'react-bootstrap/Form';
 import Table from 'react-bootstrap/Table';
 
+var API = 'http://192.168.8.5/christinaAPI';
 
 function jsonCopy(src) {
   return JSON.parse(JSON.stringify(src));
@@ -78,7 +79,7 @@ class App extends React.Component {
     temps.push({submitValue});
     this.setState({measurements: temps});
 
-    const response = await fetch('http://192.168.8.4:8001/measurement', {
+    const response = await fetch(API + '/measurement', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(submitValue),});
@@ -90,7 +91,7 @@ class App extends React.Component {
 
 
   componentDidMount() {
-    fetch('http://192.168.8.4:8001/measurements')
+    fetch(API + '/measurements')
     .then(result => {
       return result.json();
     }).then(dat => {
@@ -113,12 +114,12 @@ class App extends React.Component {
 
 
   handleGvUpdate(event) {
-    fetch('http://192.168.8.4:8001/update_gv', {
+    fetch(API + '/update_gv', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": '+event.target.checked+'}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -127,12 +128,12 @@ class App extends React.Component {
       })
   }
   handleZwischenblutungUpdate(event) {
-    fetch('http://192.168.8.4:8001/update_zb', {
+    fetch(API + '/update_zb', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": '+event.target.checked+'}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -142,12 +143,12 @@ class App extends React.Component {
   }
 
   handleBlutungUpdate(event) {
-    fetch('http://192.168.8.4:8001/update_blutung', {
+    fetch(API + '/update_blutung', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": "'+event.target.value+'"}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -157,12 +158,12 @@ class App extends React.Component {
   }
 
   handleSchleimstrukturUpdate(event) {
-    fetch('http://192.168.8.4:8001/update_schleim', {
+    fetch(API + '/update_schleim', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": "'+event.target.value+'"}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -179,12 +180,12 @@ class App extends React.Component {
     }
     console.log(event.target.value + " seems to be a valid input");
 
-    fetch('http://192.168.8.4:8001/update_temperature', {
+    fetch(API + '/update_temperature', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": '+parseFloat(event.target.value)+'}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -196,12 +197,12 @@ class App extends React.Component {
 
 
   handleMittelschmerzUpdate(event) {
-    fetch('http://192.168.8.4:8001/update_ms', {
+    fetch(API + '/update_ms', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: '{"date": "'+event.target.id+'", "value": '+event.target.checked+'}'})
       .then(result => {
-        fetch('http://192.168.8.4:8001/measurements')
+        fetch(API + '/measurements')
         .then(result => {
           return result.json();
         }).then(dat => {
@@ -392,7 +393,7 @@ const Chart = (props) => {
         .range([0, width-50]);
       
         const yScale = d3.scaleLinear()
-        .domain([35.8, 38.5])
+        .domain([35.5, 37.5])
         .range([height, 0]);  
 
 
